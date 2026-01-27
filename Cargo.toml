@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["blog-cli","blog-client", "blog-server", "blog-wasm"]
+
+[workspace.package]
+name = "blog-project"
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
