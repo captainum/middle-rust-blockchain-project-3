@@ -23,5 +23,7 @@ anyhow = { workspace = true }
 
 dotenv = { workspace = true }
 
+jsonwebtoken = { workspace = true }
+
 [build-dependencies]
 tonic-prost-build = { workspace = true }
