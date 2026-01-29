@@ -7,40 +7,40 @@ use serde::{Deserialize};
 #[derive(Debug)]
 struct User {
     /// Идентификатор пользователя.
-    id: i64,
+    pub id: i64,
 
     /// Имя пользователя.
-    username: String,
+    pub username: String,
 
     /// Email-адрес пользователя.
-    email: String,
+    pub email: String,
 
     /// Хеш от пароля пользователя.
-    password_hash: String,
+    pub password_hash: String,
 
     /// Время создания пользователя.
-    created_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 /// Данные о запросе на создание нового пользователя.
 #[derive(Debug, Deserialize)]
 struct CreateUserRequest {
     /// Имя пользователя.
-    username: String,
+    pub username: String,
 
     /// Email-адрес пользователя.
-    email: String,
+    pub email: String,
 
     /// Пароль пользователя.
-    password: String,
+    pub password: String,
 }
 
 /// Данные о запросе на вход пользователя.
 #[derive(Debug, Deserialize)]
 struct LoginUserRequest {
     /// Имя пользователя.
-    username: String,
+    pub username: String,
 
     /// Пароль пользователя.
-    password: String,
+    pub password: String,
 }
