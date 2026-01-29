@@ -19,6 +19,7 @@ sqlx = { workspace = true }
 serde = { workspace = true }
 
 thiserror = { workspace = true }
+anyhow = { workspace = true }
 
 dotenv = { workspace = true }
 
