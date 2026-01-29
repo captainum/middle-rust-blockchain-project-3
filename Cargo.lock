@@ -159,6 +159,7 @@ dependencies = [
  "prost",
  "serde",
  "sqlx",
+ "thiserror",
  "tokio",
  "tonic",
  "tonic-prost",

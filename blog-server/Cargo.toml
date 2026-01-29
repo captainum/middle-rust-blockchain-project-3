@@ -18,6 +18,8 @@ sqlx = { workspace = true }
 
 serde = { workspace = true }
 
+thiserror = { workspace = true }
+
 dotenv = { workspace = true }
 
 [build-dependencies]
