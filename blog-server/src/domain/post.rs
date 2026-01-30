@@ -1,10 +1,10 @@
 //! Доменные модели поста.
 
 use sqlx::types::chrono::{DateTime, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Информация о посте.
-#[derive(Debug, sqlx::FromRow)]
+#[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct Post {
     /// Идентификатор поста.
     pub id: i64,
@@ -25,6 +25,8 @@ pub struct Post {
     pub updated_at: DateTime<Utc>,
 }
 
+crate::impl_json_response!(Post);
+
 /// Данные о запросе на создание нового поста.
 #[derive(Debug, Deserialize)]
 pub struct CreatePostRequest {
@@ -42,8 +44,8 @@ impl From<CreatePostRequest> for Post {
             title: post.title,
             content: post.content,
             author_id: -1,
-            created_at: Utc::now(), // Заглушка, БД установит время
-            updated_at: Utc::now(), // Заглушка, БД установит время
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
     }
 }
@@ -52,6 +54,7 @@ impl From<CreatePostRequest> for Post {
 #[derive(Debug, Deserialize)]
 pub struct UpdatePostRequest {
     /// Идентификатор поста.
+    #[serde(skip)]
     pub id: i64,
 
     /// Заголовок поста.

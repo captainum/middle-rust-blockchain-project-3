@@ -7,7 +7,7 @@ use jsonwebtoken::{EncodingKey, DecodingKey, Header, Validation, encode, decode}
 use sqlx::types::chrono::Utc;
 
 /// Аттрибуты пользователя.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     /// Идентификатор пользователя.
     pub user_id: i64,

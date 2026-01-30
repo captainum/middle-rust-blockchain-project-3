@@ -1,4 +1,4 @@
-use sqlx::{PgPool, QueryBuilder};
+use sqlx::{PgPool, QueryBuilder, Postgres, Executor, Transaction};
 use crate::domain::error::PostError;
 use crate::domain::post::{Post, UpdatePostRequest};
 
@@ -8,43 +8,78 @@ pub struct PostRepository {
 }
 
 impl PostRepository {
-    fn new(pool: PgPool) -> Self {
+    pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 
+    pub async fn begin_transaction(&self) -> Result<Transaction<'static, Postgres>, sqlx::Error> {
+        self.pool.begin().await
+    }
+
+    pub async fn commit_transaction(&self, tx: Transaction<'static, Postgres>) -> Result<(), sqlx::Error> {
+        tx.commit().await
+    }
+
     pub async fn create_post(&self, post: Post, author_id: i64) -> Result<Post, PostError> {
+        self.create_post_with_tx(post, author_id, &self.pool).await
+    }
+
+    pub async fn create_post_with_tx<'e, E>(&self, post: Post, author_id: i64, executor: E) -> Result<Post, PostError>
+    where
+        E: Executor<'e, Database = Postgres> {
         let post = sqlx::query_as!(
             Post,
             "INSERT INTO posts (title, content, author_id) VALUES ($1, $2, $3) RETURNING *",
             post.title,
             post.content,
             author_id
-        ).fetch_one(&self.pool).await?;
+        ).fetch_one(executor).await?;
 
         Ok(post)
     }
 
     pub async fn get_post(&self, id: i64) -> Result<Post, PostError> {
+        self.get_post_with_tx(id, &self.pool).await
+    }
+
+    pub async fn get_post_with_tx<'e, E>(&self, id: i64, executor: E) -> Result<Post, PostError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         let post = sqlx::query_as!(
             Post,
             "SELECT * FROM posts WHERE id = $1",
             id
-        ).fetch_optional(&self.pool).await?.ok_or(PostError::PostNotFound)?;
+        ).fetch_optional(executor).await?.ok_or(PostError::PostNotFound)?;
 
         Ok(post)
     }
 
     pub async fn get_posts(&self, limit: i64, offset: i64) -> Result<Vec<Post>, PostError> {
+        self.get_posts_with_tx(limit, offset, &self.pool).await
+    }
+
+    pub async fn get_posts_with_tx<'e, E>(&self, limit: i64, offset: i64, executor: E) -> Result<Vec<Post>, PostError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         let posts = sqlx::query_as!(
             Post,
             "SELECT * FROM posts LIMIT $1 OFFSET $2",
             limit, offset
-        ).fetch_all(&self.pool).await?;
+        ).fetch_all(executor).await?;
 
         Ok(posts)
     }
 
     pub async fn update_post(&self, post: UpdatePostRequest) -> Result<Post, PostError> {
+        self.update_post_with_tx(post, &self.pool).await
+    }
+
+    pub async fn update_post_with_tx<'e, E>(&self, post: UpdatePostRequest, executor: E) -> Result<Post, PostError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         let mut query_builder = QueryBuilder::new("UPDATE posts SET ");
 
         let mut has_fields = false;
@@ -77,7 +112,7 @@ impl PostRepository {
 
         let updated_post = query_builder
             .build_query_as::<Post>()
-            .fetch_optional(&self.pool)
+            .fetch_optional(executor)
             .await?
             .ok_or(PostError::PostNotFound)?;
 
@@ -85,7 +120,16 @@ impl PostRepository {
     }
 
     pub async fn delete_post(&self, id: i64) -> Result<(), PostError> {
-        sqlx::query!("DELETE FROM posts WHERE id = $1", id).execute(&self.pool).await?;
+        self.delete_post_with_tx(id, &self.pool).await
+    }
+
+    pub async fn delete_post_with_tx<'e, E>(&self, id: i64, executor: E) -> Result<(), PostError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query!("DELETE FROM posts WHERE id = $1", id)
+            .execute(executor)
+            .await?;
 
         Ok(())
     }
