@@ -1,5 +1,8 @@
 mod domain;
 mod infrastructure;
+mod presentation;
+mod application;
+mod data;
 
 use infrastructure::database::{create_pool, run_migrations};
 

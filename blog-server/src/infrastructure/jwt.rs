@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use jsonwebtoken::{EncodingKey, DecodingKey, Header, Validation, encode, decode};
 use sqlx::types::chrono::Utc;
 
-
 /// Аттрибуты пользователя.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -21,7 +20,8 @@ pub struct Claims {
 }
 
 /// Сервис взаимодействия с JWT-токенами.
-struct JwtService {
+#[derive(Debug)]
+pub struct JwtService {
     /// Ключ шифрования.
     encoding: EncodingKey,
 
@@ -31,7 +31,7 @@ struct JwtService {
 
 impl JwtService {
     /// Создание сервиса из секретного ключа.
-    fn new(secret: &str) -> Self {
+    pub fn new(secret: &str) -> Self {
         let (encoding, decoding) = (
             EncodingKey::from_secret(secret.as_bytes()),
             DecodingKey::from_secret(secret.as_bytes())
@@ -41,7 +41,7 @@ impl JwtService {
     }
 
     /// Генерация JWT-токена с временем жизни 24 часа.
-    fn generate_token(&self, user_id: i64, username: &str) -> anyhow::Result<String> {
+    pub fn generate_token(&self, user_id: i64, username: &str) -> anyhow::Result<String> {
         let exp = (Utc::now() + Duration::from_secs(24 * 60 * 60)).timestamp() as usize;
         let claims = Claims {
             user_id,
@@ -57,7 +57,7 @@ impl JwtService {
     }
 
     /// Проверка и декодирование токена.
-    fn verify_token(&self, token: &str) -> anyhow::Result<Claims> {
+    pub fn verify_token(&self, token: &str) -> anyhow::Result<Claims> {
         let validator = Validation::default();
 
         let decoded = decode::<Claims>(token, &self.decoding, &validator)?;

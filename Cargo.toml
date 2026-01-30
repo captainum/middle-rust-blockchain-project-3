@@ -15,6 +15,8 @@ tonic-prost-build = "0.14"
 
 tokio = { version = "1.49", features = ["rt-multi-thread"]}
 
+axum = { version = "0.8"}
+
 sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "postgres", "chrono"]}
 
 serde = { version = "1.0"}
@@ -25,3 +27,4 @@ anyhow = { version = "1.0" }
 dotenv = "0.15"
 
 jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
+argon2 = { version = "0.5", features = ["std"] }

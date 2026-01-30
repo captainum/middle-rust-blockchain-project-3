@@ -19,7 +19,7 @@ pub async fn create_pool() -> anyhow::Result<PgPool> {
 }
 
 /// Актуализировать миграции в БД.
-pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
+pub async fn run_migrations(pool: &PgPool) -> anyhow::Result<()> {
     migrate!().run(pool).await?;
 
     Ok(())
