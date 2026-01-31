@@ -8,7 +8,7 @@ pub struct UserRepository {
 }
 
 impl UserRepository {
-    fn new(pool: PgPool) -> Self {
+    pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 
