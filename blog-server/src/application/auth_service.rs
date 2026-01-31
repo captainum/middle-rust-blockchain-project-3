@@ -13,6 +13,13 @@ pub struct AuthService {
 }
 
 impl AuthService {
+    pub fn new(jwt_service: Arc<JwtService>, user_repository: Arc<UserRepository>) -> Self {
+        Self {
+            jwt_service,
+            user_repository
+        }
+    }
+
     pub async fn register(&self, user: CreateUserRequest) -> Result<CreateUserResponse, UserError> {
         let user = self.user_repository.create_user(
             user.try_into()?

@@ -10,6 +10,10 @@ pub struct BlogService {
 }
 
 impl BlogService {
+    pub fn new(post_repository: Arc<PostRepository>) -> Self {
+        Self { post_repository }
+    }
+
     pub async fn create_post(&self, post: CreatePostRequest, author_id: i64) -> Result<Post, PostError> {
         self.post_repository.create_post(post.into(), author_id).await
     }
