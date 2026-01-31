@@ -6,6 +6,16 @@ use serde::{Deserialize, Serialize};
 use jsonwebtoken::{EncodingKey, DecodingKey, Header, Validation, encode, decode};
 use sqlx::types::chrono::Utc;
 
+pub fn load_secret() -> anyhow::Result<String> {
+    let secret = std::env::var("JWT_SECRET").map_err(|e| anyhow::anyhow!("JWT_SECRET: {e}"))?;
+
+    if secret.len() < 32 {
+        anyhow::bail!("JWT_SECRET must be less than 32 characters");
+    }
+
+    Ok(secret)
+}
+
 /// Аттрибуты пользователя.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
