@@ -7,7 +7,7 @@ use crate::domain::error::UserError;
 use crate::impl_json_response;
 
 /// Информация о пользователе.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct User {
     /// Идентификатор пользователя.
     pub id: i64,
@@ -18,6 +18,7 @@ pub struct User {
     /// Email-адрес пользователя.
     pub email: String,
 
+    #[serde(skip)]
     /// Хеш от пароля пользователя.
     pub password_hash: String,
 
