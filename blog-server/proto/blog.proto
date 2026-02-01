@@ -11,7 +11,7 @@ service BlogService {
 
   rpc GetPost(GetPostRequest) returns (GetPostResponse);
 
-  rpc GetPosts(GetPostsRequest) returns (GetPostResponse);
+  rpc GetPosts(GetPostsRequest) returns (GetPostsResponse);
 
   rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse);
 

@@ -1,5 +1,6 @@
 mod http_handlers;
 pub mod middleware;
+pub mod grpc_service;
 
 use std::convert::Infallible;
 use http_handlers::api;

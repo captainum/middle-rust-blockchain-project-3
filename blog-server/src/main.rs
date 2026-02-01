@@ -26,7 +26,11 @@ use std::net::SocketAddr;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::GovernorLayer;
 
-mod blog_grpc {
+use tonic::transport::Server;
+use crate::blog_grpc::blog_service_server::BlogServiceServer;
+use crate::presentation::grpc_service::BlogGrpcService;
+
+pub mod blog_grpc {
     tonic::include_proto!("blog");
 }
 
@@ -34,9 +38,17 @@ mod blog_grpc {
 #[derive(Debug, Parser)]
 #[command(version, about)]
 struct Args {
-    /// Адрес для прослушивания.
-    #[arg(long, default_value = "127.0.0.1:3000")]
-    addr: SocketAddr,
+    /// Адрес для прослушивания входящих соединений.
+    #[arg(long, default_value = "127.0.0.1")]
+    host: String,
+
+    /// Порт для прослушивания входящих HTTP-соединений.
+    #[arg(long, default_value = "3000")]
+    http_port: u16,
+
+    /// Порт для прослушивания входящих GRPC-соединений.
+    #[arg(long, default_value = "50051")]
+    grpc_port: u16,
 
     /// Уровень логирования.
     ///
@@ -76,6 +88,39 @@ fn create_cors_layer() -> CorsLayer {
     cors
 }
 
+async fn prepare_http_serve(app: AppState, addr: SocketAddr) -> anyhow::Result<
+    axum::serve::Serve<TcpListener, axum::routing::Router, axum::routing::Router>
+> {
+    tracing::info!("Listening HTTP connections on {}", addr);
+
+    let governor_conf = GovernorConfigBuilder::default()
+        .per_second(2)
+        .burst_size(5)
+        .finish().ok_or(anyhow::anyhow!("Failed to prepare rate limiter"))?;
+
+    let middleware = ServiceBuilder::new()
+        .layer(TraceLayer::new_for_http())
+        .layer(GovernorLayer::new(governor_conf))
+        .concurrency_limit(20)
+        .layer(create_cors_layer())
+        .layer(TimeoutLayer::with_status_code(axum::http::StatusCode::REQUEST_TIMEOUT, Duration::from_secs(30)));
+
+    let router = create_router(app, middleware);
+
+    let listener = TcpListener::bind(addr).await?;
+
+    Ok(axum::serve(listener, router))
+}
+
+async fn prepare_grpc_serve(app: AppState, addr: SocketAddr) -> impl Future<Output = Result<(), tonic::transport::Error>> {
+    tracing::info!("Listening GRPC connections on {}", addr);
+
+    let grpc_service = BlogServiceServer::new(BlogGrpcService::new(app));
+
+    Server::builder().add_service(grpc_service).serve(addr)
+}
+
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
     let args = Args::parse();
@@ -101,25 +146,20 @@ async fn main() -> anyhow::Result<()>{
 
     let app = AppState::new(auth_service.clone(), blog_service.clone(), jwt_service.clone());
 
-    let governor_conf = GovernorConfigBuilder::default()
-        .per_second(2)
-        .burst_size(5)
-        .finish().ok_or(anyhow::anyhow!("Failed to prepare rate limiter"))?;
+    let http_addr = format!("{}:{}", args.host, args.http_port).parse()?;
+    let grpc_addr = format!("{}:{}", args.host, args.grpc_port).parse()?;
 
-    let middleware = ServiceBuilder::new()
-        .layer(TraceLayer::new_for_http())
-        .layer(GovernorLayer::new(governor_conf))
-        .concurrency_limit(20)
-        .layer(create_cors_layer())
-        .layer(TimeoutLayer::with_status_code(axum::http::StatusCode::REQUEST_TIMEOUT, Duration::from_secs(30)));
+    let http_serve = prepare_http_serve(app.clone(), http_addr).await?;
+    let grpc_serve = prepare_grpc_serve(app.clone(), grpc_addr).await;
 
-    let router = create_router(app, middleware);
-
-    let listener = TcpListener::bind(args.addr).await?;
-
-    tracing::info!("Listening on {}", args.addr);
-
-    axum::serve(listener, router).await?;
+    tokio::select! {
+        result = http_serve => {
+           result?
+        },
+        result = grpc_serve => {
+            result?
+        }
+    }
 
     Ok(())
 }

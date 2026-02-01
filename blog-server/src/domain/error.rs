@@ -42,6 +42,21 @@ impl IntoResponse for UserError {
     }
 }
 
+impl From<UserError> for tonic::Status {
+    fn from(e: UserError) -> Self {
+        let status = match e {
+            UserError::UserNotFound => Self::not_found,
+            UserError::UserAlreadyExists => Self::already_exists,
+            UserError::InvalidCredentials => Self::invalid_argument,
+            UserError::PasswordHashing(_) => Self::internal,
+            UserError::CreateJwtToken(_) => Self::internal,
+            UserError::Database(_) => Self::internal,
+        };
+
+        status(e.to_string())
+    }
+}
+
 /// Ошибка взаимодействия с данными поста.
 #[derive(Debug, Error)]
 pub enum PostError {
@@ -64,5 +79,17 @@ impl IntoResponse for PostError {
         };
 
         status_code.into_response()
+    }
+}
+
+impl From<PostError> for tonic::Status {
+    fn from(e: PostError) -> Self {
+        let status = match e {
+            PostError::PostNotFound => Self::not_found,
+            PostError::Forbidden => Self::already_exists,
+            PostError::Database(_) => Self::invalid_argument,
+        };
+
+        status(e.to_string())
     }
 }

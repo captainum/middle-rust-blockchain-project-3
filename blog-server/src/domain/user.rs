@@ -39,6 +39,16 @@ pub struct CreateUserRequest {
     pub password: String,
 }
 
+impl From<crate::blog_grpc::CreateUserRequest> for CreateUserRequest {
+    fn from(req: crate::blog_grpc::CreateUserRequest) -> Self {
+        Self {
+            username: req.username,
+            email: req.email,
+            password: req.password,
+        }
+    }
+}
+
 impl TryFrom<CreateUserRequest> for User {
     type Error = UserError;
 
@@ -64,6 +74,14 @@ pub struct CreateUserResponse {
 
 impl_json_response!(CreateUserResponse);
 
+impl From<CreateUserResponse> for crate::blog_grpc::CreateUserResponse {
+    fn from(response: CreateUserResponse) -> Self {
+        Self {
+            token: response.token,
+        }
+    }
+}
+
 /// Данные о запросе на вход пользователя.
 #[derive(Debug, Deserialize)]
 pub struct LoginUserRequest {
@@ -74,6 +92,15 @@ pub struct LoginUserRequest {
     pub password: String,
 }
 
+impl From<crate::blog_grpc::LoginUserRequest> for LoginUserRequest {
+    fn from(req: crate::blog_grpc::LoginUserRequest) -> Self {
+        Self {
+            username: req.username,
+            password: req.password,
+        }
+    }
+}
+
 /// Данные об ответе на вход пользователя.
 #[derive(Debug, Serialize)]
 pub struct LoginUserResponse {
@@ -81,3 +108,11 @@ pub struct LoginUserResponse {
 }
 
 impl_json_response!(LoginUserResponse);
+
+impl From<LoginUserResponse> for crate::blog_grpc::LoginUserResponse {
+    fn from(response: LoginUserResponse) -> Self {
+        Self {
+            token: response.token,
+        }
+    }
+}

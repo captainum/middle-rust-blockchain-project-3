@@ -27,6 +27,19 @@ pub struct Post {
 
 crate::impl_json_response!(Post);
 
+impl From<Post> for crate::blog_grpc::Post {
+    fn from(post: Post) -> Self {
+        Self {
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            author_id: post.author_id,
+            created_at: post.created_at.to_rfc3339(),
+            updated_at: post.updated_at.to_rfc3339(),
+        }
+    }
+}
+
 /// Данные о запросе на создание нового поста.
 #[derive(Debug, Deserialize)]
 pub struct CreatePostRequest {
@@ -35,6 +48,15 @@ pub struct CreatePostRequest {
 
     /// Содержимое поста.
     pub content: String,
+}
+
+impl From<crate::blog_grpc::CreatePostRequest> for CreatePostRequest {
+    fn from(req: crate::blog_grpc::CreatePostRequest) -> Self {
+        Self {
+            title: req.title,
+            content: req.content,
+        }
+    }
 }
 
 impl From<CreatePostRequest> for Post {
@@ -62,4 +84,14 @@ pub struct UpdatePostRequest {
 
     /// Содержимое поста.
     pub content: Option<String>,
+}
+
+impl From<crate::blog_grpc::UpdatePostRequest> for UpdatePostRequest {
+    fn from(req: crate::blog_grpc::UpdatePostRequest) -> Self {
+        Self {
+            id: req.id,
+            title: if req.title.is_empty() { None } else { Some(req.title) },
+            content: if req.content.is_empty() { None } else { Some(req.content) },
+        }
+    }
 }
