@@ -10,7 +10,15 @@ path = "src/lib.rs"
 [dependencies]
 tonic = { workspace = true }
 prost = { workspace = true }
-tonic-prost = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+chrono = { workspace = true }
+
+reqwest = { workspace = true }
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }

@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use crate::blog_grpc::blog_service_server::BlogService;
 use crate::blog_grpc::{CreatePostRequest, CreatePostResponse, CreateUserRequest, CreateUserResponse, DeletePostRequest, DeletePostResponse, GetPostRequest, GetPostResponse, GetPostsRequest, GetPostsResponse, LoginUserRequest, LoginUserResponse, UpdatePostRequest, UpdatePostResponse};
@@ -63,7 +62,7 @@ impl BlogService for BlogGrpcService {
         let request = request.into_inner();
         let posts = self.state.blog_service.get_posts(request.limit, request.offset).await?;
 
-        Ok(Response::new(GetPostsResponse { post: posts.into_iter().map(|p| p.into()).collect() }))
+        Ok(Response::new(GetPostsResponse { posts: posts.into_iter().map(|p| p.into()).collect() }))
     }
 
     async fn update_post(&self, request: Request<UpdatePostRequest>) -> Result<Response<UpdatePostResponse>, Status> {

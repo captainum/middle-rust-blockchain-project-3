@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::domain::error::UserError;
-use crate::domain::user::{User, CreateUserRequest, CreateUserResponse, LoginUserRequest, LoginUserResponse};
+use crate::domain::user::{CreateUserRequest, CreateUserResponse, LoginUserRequest, LoginUserResponse};
 
 use argon2::{password_hash::PasswordHash, Argon2, PasswordVerifier};
 use crate::data::user_repository::UserRepository;

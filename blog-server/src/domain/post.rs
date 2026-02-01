@@ -90,8 +90,8 @@ impl From<crate::blog_grpc::UpdatePostRequest> for UpdatePostRequest {
     fn from(req: crate::blog_grpc::UpdatePostRequest) -> Self {
         Self {
             id: req.id,
-            title: if req.title.is_empty() { None } else { Some(req.title) },
-            content: if req.content.is_empty() { None } else { Some(req.content) },
+            title: req.title,
+            content: req.content,
         }
     }
 }

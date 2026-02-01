@@ -76,13 +76,13 @@ message GetPostsRequest {
 }
 
 message GetPostsResponse {
-  repeated Post post = 1;
+  repeated Post posts = 1;
 }
 
 message UpdatePostRequest {
   int64 id = 1;
-  string title = 2;
-  string content = 3;
+  optional string title = 2;
+  optional string content = 3;
 }
 
 message UpdatePostResponse {
