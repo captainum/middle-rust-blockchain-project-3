@@ -5,7 +5,7 @@ use crate::error::BlogClientError;
 use crate::{AuthResponse, Client, Post, Transport};
 
 pub struct HttpClient {
-    addr: SocketAddr,
+    addr: String,
     inner: reqwest::Client
 }
 
@@ -13,7 +13,7 @@ impl HttpClient {
     pub async fn new(addr: SocketAddr) -> Result<Self, BlogClientError> {
         let inner = reqwest::Client::new();
 
-        Ok(Self { addr, inner })
+        Ok(Self { addr: format!("http://{addr}"), inner })
     }
 }
 
@@ -30,9 +30,9 @@ impl Client for HttpClient {
         let endpoint = format!("{}/api/auth/register", self.addr);
 
         let payload = serde_json::json!({
-            username: username,
-            email: email,
-            password: password
+            "username": username,
+            "email": email,
+            "password": password
         });
 
         let response = self.inner
@@ -51,12 +51,13 @@ impl Client for HttpClient {
         let endpoint = format!("{}/api/auth/login", self.addr);
 
         let payload = serde_json::json!({
-            username: username,
-            password: password
+            "username": username,
+            "password": password
         });
 
         let response = self.inner
             .post(endpoint)
+            .header("Content-Type", "application/json")
             .json(&payload)
             .send()
             .await
@@ -71,8 +72,8 @@ impl Client for HttpClient {
         let endpoint = format!("{}/api/auth/register", self.addr);
 
         let payload = serde_json::json!({
-            title: title,
-            content: content
+            "title": title,
+            "content": content
         });
 
         let post = self.inner
