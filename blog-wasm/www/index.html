@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система блога</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Интерфейс системы блога</h1>
+            <div id="auth-status" class="auth-status">
+                <span id="status-text">Не авторизован</span>
+                <button id="logout-btn" style="display: none;">Выйти</button>
+            </div>
+        </header>
+
+        <!-- Панель аутентификации -->
+        <div id="auth-panel" class="auth-panel">
+            <!-- Переключатель форм -->
+            <div class="auth-tabs">
+                <button id="show-login-tab" class="tab-button active">Вход</button>
+                <button id="show-register-tab" class="tab-button">Регистрация</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="login-container" class="form-container">
+                <h2>Вход в систему</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username">Имя пользователя:</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Пароль:</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit">Войти</button>
+                    <div id="login-error" class="error"></div>
+                </form>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="register-container" class="form-container" style="display: none;">
+                <h2>Регистрация</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">Имя пользователя:</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email:</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Пароль:</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <button type="submit">Зарегистрироваться</button>
+                    <div id="register-error" class="error"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Форма создания поста (показывается только авторизованным) -->
+        <div id="create-post-panel" style="display: none;">
+            <h2>Создать новый пост</h2>
+            <form id="create-post-form">
+                <div class="form-group">
+                    <label for="post-title">Заголовок:</label>
+                    <input type="text" id="post-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="post-content">Содержание:</label>
+                    <textarea id="post-content" rows="5" required></textarea>
+                </div>
+                <button type="submit">Создать пост</button>
+                <div id="create-post-error" class="error"></div>
+            </form>
+        </div>
+
+        <!-- Панель редактирования поста (скрыта по умолчанию) -->
+        <div id="edit-post-panel" style="display: none;">
+            <h2>Редактировать пост</h2>
+            <form id="edit-post-form">
+                <input type="hidden" id="edit-post-id">
+                <div class="form-group">
+                    <label for="edit-post-title">Заголовок:</label>
+                    <input type="text" id="edit-post-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-post-content">Содержание:</label>
+                    <textarea id="edit-post-content" rows="5" required></textarea>
+                </div>
+                <button type="submit">Сохранить изменения</button>
+                <button type="button" id="cancel-edit-btn">Отмена</button>
+                <div id="edit-post-error" class="error"></div>
+            </form>
+        </div>
+
+        <!-- Список постов -->
+        <div class="posts-section">
+            <h2>Посты</h2>
+            <div id="posts-loading" class="loading">Загрузка постов...</div>
+            <div id="posts-list" class="posts-list"></div>
+            <div id="posts-error" class="error"></div>
+
+            <!-- Пагинация -->
+            <div class="pagination">
+                <button id="prev-page-btn" disabled>← Назад</button>
+                <span id="page-info">Страница 1</span>
+                <button id="next-page-btn">Вперёд →</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

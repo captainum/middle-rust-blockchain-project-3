@@ -3,10 +3,6 @@ name = "blog-server"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "server"
-path = "src/main.rs"
-
 [dependencies]
 tonic = { workspace = true }
 prost = { workspace = true }
@@ -17,9 +13,9 @@ tokio = { workspace = true }
 axum = { workspace = true }
 
 sqlx = { workspace = true }
-chrono= { workspace = true }
 
 serde = { workspace = true }
+validator = { workspace = true }
 
 thiserror = { workspace = true }
 anyhow = { workspace = true }

@@ -33,6 +33,7 @@ message CreateUserRequest {
 
 message CreateUserResponse {
   string token = 1;
+  User user = 2;
 }
 
 message LoginUserRequest {
@@ -42,6 +43,7 @@ message LoginUserRequest {
 
 message LoginUserResponse {
   string token = 1;
+  User user = 2;
 }
 
 message Post {

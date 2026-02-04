@@ -1,10 +1,15 @@
 //! Доменные модели пользователя.
 
-use argon2::{password_hash::{SaltString, rand_core::OsRng}, Argon2, PasswordHasher};
-use sqlx::types::chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use crate::domain::error::UserError;
 use crate::impl_json_response;
+use argon2::{
+    Argon2, PasswordHasher,
+    password_hash::{SaltString, rand_core::OsRng},
+};
+use serde::{Deserialize, Serialize};
+use sqlx::types::chrono::{DateTime, Utc};
+
+use validator::Validate;
 
 /// Информация о пользователе.
 #[derive(Debug, Serialize)]
@@ -26,16 +31,29 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
+impl From<User> for crate::blog_grpc::User {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            created_at: user.created_at.to_string(),
+        }
+    }
+}
+
 /// Данные о запросе на создание нового пользователя.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateUserRequest {
     /// Имя пользователя.
     pub username: String,
 
     /// Email-адрес пользователя.
+    #[validate(email)]
     pub email: String,
 
     /// Пароль пользователя.
+    #[validate(length(min = 6))]
     pub password: String,
 }
 
@@ -54,7 +72,8 @@ impl TryFrom<CreateUserRequest> for User {
 
     fn try_from(user: CreateUserRequest) -> Result<Self, Self::Error> {
         let password_hash = Argon2::default()
-            .hash_password(user.password.as_bytes(), &SaltString::generate(&mut OsRng))?.to_string();
+            .hash_password(user.password.as_bytes(), &SaltString::generate(&mut OsRng))?
+            .to_string();
 
         Ok(Self {
             id: -1,
@@ -69,7 +88,11 @@ impl TryFrom<CreateUserRequest> for User {
 /// Данные об ответе на создание нового пользователя.
 #[derive(Debug, Serialize)]
 pub struct CreateUserResponse {
+    /// JWT-токен авторизации.
     pub token: String,
+
+    /// Созданный пользователь.
+    pub user: User,
 }
 
 impl_json_response!(CreateUserResponse);
@@ -78,13 +101,14 @@ impl From<CreateUserResponse> for crate::blog_grpc::CreateUserResponse {
     fn from(response: CreateUserResponse) -> Self {
         Self {
             token: response.token,
+            user: Some(response.user.into()),
         }
     }
 }
 
 /// Данные о запросе на вход пользователя.
 #[derive(Debug, Deserialize)]
-pub struct LoginUserRequest {
+pub(crate) struct LoginUserRequest {
     /// Имя пользователя.
     pub username: String,
 
@@ -104,7 +128,11 @@ impl From<crate::blog_grpc::LoginUserRequest> for LoginUserRequest {
 /// Данные об ответе на вход пользователя.
 #[derive(Debug, Serialize)]
 pub struct LoginUserResponse {
+    /// JWT-токен авторизации.
     pub token: String,
+
+    /// Информация о пользователе, который был авторизован.
+    pub user: User,
 }
 
 impl_json_response!(LoginUserResponse);
@@ -113,6 +141,7 @@ impl From<LoginUserResponse> for crate::blog_grpc::LoginUserResponse {
     fn from(response: LoginUserResponse) -> Self {
         Self {
             token: response.token,
+            user: Some(response.user.into()),
         }
     }
 }

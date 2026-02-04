@@ -1,7 +1,7 @@
 //! Доменные модели поста.
 
-use sqlx::types::chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::types::chrono::{DateTime, Utc};
 
 /// Информация о посте.
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -74,7 +74,7 @@ impl From<CreatePostRequest> for Post {
 
 /// Данные о запросе на обновление поста.
 #[derive(Debug, Deserialize)]
-pub struct UpdatePostRequest {
+pub(crate) struct UpdatePostRequest {
     /// Идентификатор поста.
     #[serde(skip)]
     pub id: i64,

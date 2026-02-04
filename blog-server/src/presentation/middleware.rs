@@ -1,15 +1,15 @@
 //! Функционал middleware.
 
+use crate::presentation::AppState;
 use axum::{
     extract::{Request, State},
-    http::{StatusCode},
+    http::StatusCode,
     middleware::Next,
     response::Response,
 };
-use crate::presentation::AppState;
 
 /// Middleware функция для валидации JWT токена.
-pub async fn jwt_validator(
+pub(crate) async fn jwt_validator(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,

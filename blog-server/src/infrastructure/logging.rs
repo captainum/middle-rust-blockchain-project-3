@@ -1,14 +1,16 @@
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-use tracing_subscriber::fmt::time::ChronoUtc;
+//! Модуль логгирования.
 
-pub fn init_logging(log_level: &str) {
+use tracing_subscriber::fmt::time::ChronoUtc;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+
+/// Инициализация логгера с указанием уровня логгирования.
+pub(crate) fn init_logging(log_level: &str) {
     let filter = EnvFilter::new(format!(
-        "server={},axum=info,tower=info,tower_http=info",
+        "blog_server={},axum=info,tower=info,tower_http=info",
         log_level.to_lowercase()
     ));
 
-    let format = tracing_subscriber::fmt::layer()
-        .with_timer(ChronoUtc::rfc_3339());
+    let format = tracing_subscriber::fmt::layer().with_timer(ChronoUtc::rfc_3339());
 
     tracing_subscriber::registry()
         .with(filter)

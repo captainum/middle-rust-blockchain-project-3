@@ -1,36 +1,47 @@
-use std::net::SocketAddr;
-use tonic::{async_trait, Request};
+//! gRPC-клиент для API сервиса блога.
+
 use crate::blog_grpc::blog_service_client::BlogServiceClient;
 use crate::blog_grpc::{
-    CreatePostRequest, CreateUserRequest, DeletePostRequest,
-    GetPostRequest, GetPostsRequest, LoginUserRequest, UpdatePostRequest
+    CreatePostRequest, CreateUserRequest, DeletePostRequest, GetPostRequest, GetPostsRequest,
+    LoginUserRequest, UpdatePostRequest,
 };
 use crate::error::BlogClientError;
-use crate::{Client, Post};
+use crate::{AuthResponse, Client, Post};
+use std::net::SocketAddr;
+use tonic::{Request, async_trait};
 
-pub struct GrpcClient {
-    addr: SocketAddr,
+/// gRPC-клиент для взаимодействия с сервисом блога.
+#[derive(Clone)]
+pub(crate) struct GrpcClient {
+    /// Адрес сервера.
+    #[allow(dead_code)]
+    addr: String,
+    /// Внутренний gRPC-клиент для отправки запросов.
     inner: BlogServiceClient<tonic::transport::Channel>,
 }
 
 impl GrpcClient {
-    pub async fn new(addr: SocketAddr) -> Result<Self, BlogClientError> {
-        let inner = BlogServiceClient::connect(addr.to_string()).await?;
+    /// Создать новый экземпляр gRPC-клиента и подключиться к серверу.
+    pub(crate) async fn new(addr: SocketAddr) -> Result<Self, BlogClientError> {
+        let addr = format!("http://{addr}");
+        let inner = BlogServiceClient::connect(addr.clone()).await?;
 
         Ok(Self { addr, inner })
     }
 }
 
+/// Реализация клиентского интерфейса для gRPC.
 #[async_trait]
 impl Client for GrpcClient {
     type Error = BlogClientError;
 
+    /// Регистрация нового пользователя.
     async fn register(
         &mut self,
         username: &str,
         email: &str,
         password: &str,
-    ) -> Result<String, Self::Error> {
+    ) -> Result<AuthResponse, Self::Error> {
         let payload = Request::new(CreateUserRequest {
             username: username.to_string(),
             email: email.to_string(),
@@ -39,21 +50,34 @@ impl Client for GrpcClient {
 
         let response = self.inner.register(payload).await?.into_inner();
 
-
-        Ok(response.token)
+        Ok(response.try_into()?)
     }
 
-    async fn login(&mut self, username: &str, password: &str) -> Result<String, Self::Error> {
+    /// Авторизация пользователя.
+    async fn login(&mut self, username: &str, password: &str) -> Result<AuthResponse, Self::Error> {
         let payload = Request::new(LoginUserRequest {
             username: username.to_string(),
             password: password.to_string(),
         });
 
-        let response = self.inner.login(payload).await?.into_inner();
+        let response = self
+            .inner
+            .login(payload)
+            .await
+            .map_err(|status| {
+                let code = status.code();
+                match code {
+                    tonic::Code::NotFound => BlogClientError::UserNotFound,
+                    tonic::Code::InvalidArgument => BlogClientError::InvalidCredentials,
+                    _ => BlogClientError::GrpcStatus(status),
+                }
+            })?
+            .into_inner();
 
-        Ok(response.token)
+        Ok(response.try_into()?)
     }
 
+    /// Создать новый пост.
     async fn create_post(
         &mut self,
         token: &str,
@@ -65,11 +89,19 @@ impl Client for GrpcClient {
             content: content.to_string(),
         });
 
-        payload
-            .metadata_mut()
-            .insert("authorization", token.parse().map_err(|_| BlogClientError::InvalidToken)?);
+        payload.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {token}")
+                .parse()
+                .map_err(|_| BlogClientError::InvalidToken)?,
+        );
 
-        let response = self.inner.create_post(payload).await?.into_inner();
+        let response = self
+            .inner
+            .create_post(payload)
+            .await
+            .map_err(check_post_auth_err)?
+            .into_inner();
 
         let post = response
             .post
@@ -79,10 +111,22 @@ impl Client for GrpcClient {
         Ok(post)
     }
 
+    /// Получить пост по идентификатору.
     async fn get_post(&mut self, id: i64) -> Result<Post, Self::Error> {
         let payload = Request::new(GetPostRequest { id });
 
-        let response = self.inner.get_post(payload).await?.into_inner();
+        let response = self
+            .inner
+            .get_post(payload)
+            .await
+            .map_err(|status| {
+                let code = status.code();
+                match code {
+                    tonic::Code::NotFound => BlogClientError::PostNotFound,
+                    _ => BlogClientError::GrpcStatus(status),
+                }
+            })?
+            .into_inner();
 
         let post = response
             .post
@@ -92,6 +136,7 @@ impl Client for GrpcClient {
         Ok(post)
     }
 
+    /// Получить список постов с пагинацией.
     async fn get_posts(&mut self, limit: i64, offset: i64) -> Result<Vec<Post>, Self::Error> {
         let payload = Request::new(GetPostsRequest { limit, offset });
 
@@ -107,6 +152,7 @@ impl Client for GrpcClient {
         Ok(posts)
     }
 
+    /// Обновить существующий пост.
     async fn update_post(
         &mut self,
         token: &str,
@@ -114,17 +160,21 @@ impl Client for GrpcClient {
         title: Option<String>,
         content: Option<String>,
     ) -> Result<Post, Self::Error> {
-        let mut payload = Request::new(UpdatePostRequest {
-            id,
-            title,
-            content,
-        });
+        let mut payload = Request::new(UpdatePostRequest { id, title, content });
 
-        payload
-            .metadata_mut()
-            .insert("authorization", token.parse().map_err(|_| BlogClientError::InvalidToken)?);
+        payload.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {token}")
+                .parse()
+                .map_err(|_| BlogClientError::InvalidToken)?,
+        );
 
-        let response = self.inner.update_post(payload).await?.into_inner();
+        let response = self
+            .inner
+            .update_post(payload)
+            .await
+            .map_err(check_post_auth_err)?
+            .into_inner();
 
         let post = response
             .post
@@ -134,15 +184,34 @@ impl Client for GrpcClient {
         Ok(post)
     }
 
+    /// Удалить пост.
     async fn delete_post(&mut self, token: &str, id: i64) -> Result<(), Self::Error> {
         let mut payload = Request::new(DeletePostRequest { id });
 
-        payload
-            .metadata_mut()
-            .insert("authorization", token.parse().map_err(|_| BlogClientError::InvalidToken)?);
+        payload.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {token}")
+                .parse()
+                .map_err(|_| BlogClientError::InvalidToken)?,
+        );
 
-        self.inner.delete_post(payload).await?.into_inner();
+        self.inner
+            .delete_post(payload)
+            .await
+            .map_err(check_post_auth_err)?
+            .into_inner();
 
         Ok(())
+    }
+}
+
+/// Преобразовать ошибку gRPC при работе с постами в ошибку клиента.
+fn check_post_auth_err(status: tonic::Status) -> BlogClientError {
+    let code = status.code();
+    match code {
+        tonic::Code::Unauthenticated => BlogClientError::UserUnauthorized,
+        tonic::Code::NotFound => BlogClientError::PostNotFound,
+        tonic::Code::InvalidArgument => BlogClientError::Forbidden,
+        _ => BlogClientError::GrpcStatus(status),
     }
 }

@@ -1,12 +1,13 @@
 //! Модуль взаимодействия с JWT-токенами.
 
-use std::time::Duration;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
-use jsonwebtoken::{EncodingKey, DecodingKey, Header, Validation, encode, decode};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use sqlx::types::chrono::Utc;
 
-pub fn load_secret() -> anyhow::Result<String> {
+/// Загрузить JWT-токен из переменной окружения.
+pub(crate) fn load_secret() -> anyhow::Result<String> {
     let secret = std::env::var("JWT_SECRET").map_err(|e| anyhow::anyhow!("JWT_SECRET: {e}"))?;
 
     if secret.len() < 32 {
@@ -18,7 +19,7 @@ pub fn load_secret() -> anyhow::Result<String> {
 
 /// Аттрибуты пользователя.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
+pub(crate) struct Claims {
     /// Идентификатор пользователя.
     pub user_id: i64,
 
@@ -31,7 +32,7 @@ pub struct Claims {
 
 /// Сервис взаимодействия с JWT-токенами.
 #[derive(Debug)]
-pub struct JwtService {
+pub(crate) struct JwtService {
     /// Ключ шифрования.
     encoding: EncodingKey,
 
@@ -41,22 +42,22 @@ pub struct JwtService {
 
 impl JwtService {
     /// Создание сервиса из секретного ключа.
-    pub fn new(secret: &str) -> Self {
+    pub(crate) fn new(secret: &str) -> Self {
         let (encoding, decoding) = (
             EncodingKey::from_secret(secret.as_bytes()),
-            DecodingKey::from_secret(secret.as_bytes())
+            DecodingKey::from_secret(secret.as_bytes()),
         );
 
         Self { encoding, decoding }
     }
 
     /// Генерация JWT-токена с временем жизни 24 часа.
-    pub fn generate_token(&self, user_id: i64, username: &str) -> anyhow::Result<String> {
+    pub(crate) fn generate_token(&self, user_id: i64, username: &str) -> anyhow::Result<String> {
         let exp = (Utc::now() + Duration::from_secs(24 * 60 * 60)).timestamp() as usize;
         let claims = Claims {
             user_id,
             username: username.to_string(),
-            exp
+            exp,
         };
 
         let header = Header::default();
@@ -67,7 +68,7 @@ impl JwtService {
     }
 
     /// Проверка и декодирование токена.
-    pub fn verify_token(&self, token: &str) -> anyhow::Result<Claims> {
+    pub(crate) fn verify_token(&self, token: &str) -> anyhow::Result<Claims> {
         let validator = Validation::default();
 
         let decoded = decode::<Claims>(token, &self.decoding, &validator)?;

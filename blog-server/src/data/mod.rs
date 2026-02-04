@@ -1,3 +1,2 @@
-pub mod user_repository;
-pub mod post_repository;
-pub mod error;
+pub(crate) mod post_repository;
+pub(crate) mod user_repository;
