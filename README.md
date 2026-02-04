@@ -15,6 +15,7 @@
 ## Необходимые зависимости
 
 ```
+sudo apt-get install protobuf-compiler
 cargo install sqlx-cli
 cargo install wasm-pack
 ```

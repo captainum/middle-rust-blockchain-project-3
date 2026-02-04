@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: format
-        run: cargo fmt --all -- --check
+        run: apt-get install protobuf-compiler && cargo fmt --all -- --check
       - name: linter
-        run: cargo clippy --all-targets -- -D warnings
+        run: apt-get install protobuf-compiler && cargo clippy --all-targets -- -D warnings
 
   build:
     runs-on: ubuntu-latest
